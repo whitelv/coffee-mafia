@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from database import get_db
-from models.user import UserPublic
-from routers.api_utils import ok, serialize_history
-from routers.auth import get_current_user, require_admin
+from backend.database import get_db
+from backend.models.user import UserPublic
+from backend.routers.api_utils import ok, serialize_history
+from backend.routers.auth import get_current_user, require_admin
 
 router = APIRouter()
 

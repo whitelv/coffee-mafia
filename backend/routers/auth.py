@@ -6,10 +6,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-import state as st
-from config import settings
-from database import get_db
-from models.user import UserPublic
+import backend.state as st
+from backend.config import settings
+from backend.database import get_db
+from backend.models.user import UserPublic
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)

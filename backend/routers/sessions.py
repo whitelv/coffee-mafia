@@ -5,13 +5,13 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-import state as st
-from database import get_db
-from models.history import HistoryModel
-from models.session import BrewSessionModel, SessionCreate
-from models.user import UserPublic
-from routers.api_utils import ok, serialize_doc, serialize_recipe, to_object_id
-from routers.auth import get_current_user
+import backend.state as st
+from backend.database import get_db
+from backend.models.history import HistoryModel
+from backend.models.session import BrewSessionModel, SessionCreate
+from backend.models.user import UserPublic
+from backend.routers.api_utils import ok, serialize_doc, serialize_recipe, to_object_id
+from backend.routers.auth import get_current_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

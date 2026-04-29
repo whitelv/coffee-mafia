@@ -8,11 +8,11 @@ from bson import ObjectId
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 
-import state as st
-from config import settings
-from database import get_db
-from models.history import HistoryModel
-from routers.auth import create_jwt, decode_jwt
+import backend.state as st
+from backend.config import settings
+from backend.database import get_db
+from backend.models.history import HistoryModel
+from backend.routers.auth import create_jwt, decode_jwt
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

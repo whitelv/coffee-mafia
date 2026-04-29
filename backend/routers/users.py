@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from pymongo import ReturnDocument
 
-from database import get_db
-from models.user import UserCreate, UserModel
-from routers.api_utils import ok, serialize_doc, to_object_id
-from routers.auth import require_admin
+from backend.database import get_db
+from backend.models.user import UserCreate, UserModel
+from backend.routers.api_utils import ok, serialize_doc, to_object_id
+from backend.routers.auth import require_admin
 
 router = APIRouter()
 

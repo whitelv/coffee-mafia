@@ -5,7 +5,7 @@ import sys
 import traceback
 from contextlib import asynccontextmanager
 
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -14,9 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from database import close_db, connect_db, get_db
-from routers import auth, history, recipes, sessions, users, ws
-import state as st
+from backend.database import close_db, connect_db, get_db
+from backend.routers import auth, history, recipes, sessions, users, ws
+import backend.state as st
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
