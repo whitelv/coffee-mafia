@@ -76,7 +76,7 @@ async def delete_user(user_id: str, _ = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="User not found")
 
     cursor = db.brew_sessions.find({"user_id": user_id, "status": "active"})
-    from routers.ws import _abandon_session
+    from backend.routers.ws import _abandon_session
 
     async for session_doc in cursor:
         await _abandon_session(str(session_doc["_id"]), "user_deleted")

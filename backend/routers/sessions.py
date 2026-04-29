@@ -34,7 +34,7 @@ async def _active_session_for_user(user_id: str) -> dict | None:
 
 
 async def _abandon_active_sessions_for_user(user_id: str, reason: str) -> int:
-    from routers.ws import _abandon_session
+    from backend.routers.ws import _abandon_session
 
     db = get_db()
     cursor = db.brew_sessions.find({"user_id": user_id, "status": "active"})
@@ -60,7 +60,7 @@ async def _send_display_status(
     line2: str = "",
     line3: str = "",
 ) -> None:
-    from routers.ws import _send
+    from backend.routers.ws import _send
 
     await _send(st.esp_sockets.get(esp_id), {
         "event": "display_status",
@@ -108,7 +108,7 @@ async def _write_history(session_id: str, session_doc: dict, user: UserPublic) -
 
 
 async def _notify_complete(session_id: str, session_doc: dict) -> None:
-    from routers.ws import _send
+    from backend.routers.ws import _send
 
     entry = st.sessions.get(session_id)
     esp_id = entry.esp_id if entry else session_doc.get("esp_id")
