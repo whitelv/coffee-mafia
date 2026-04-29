@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Coffee Bar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">&#9749; Coffee Bar</span>
+    <div class="nav-links">
+      <a href="select.html">Menu</a>
+      <a href="history.html">History</a>
+      <a href="admin.html" style="color:var(--accent);">Admin</a>
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn btn-sm btn-secondary" id="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="section-header" style="margin-bottom:0;"><h2>Admin Panel</h2></div>
+    <div class="tabs" style="margin-top:1rem;">
+      <button class="tab-btn active" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="recipes">Recipes</button>
+    </div>
+
+    <!-- Users -->
+    <div id="panel-users" class="tab-panel active">
+      <div class="section-header">
+        <h3>Users</h3>
+        <button class="btn btn-primary btn-sm" id="btn-add-user">+ Add User</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Role</th><th>Actions</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recipes -->
+    <div id="panel-recipes" class="tab-panel">
+      <div class="section-header">
+        <h3>Recipes</h3>
+        <button class="btn btn-primary btn-sm" id="btn-add-recipe">+ Add Recipe</button>
+      </div>
+      <div id="recipes-list"></div>
+
+      <div id="recipe-editor" class="recipe-editor">
+        <h3 id="editor-title">New Recipe</h3>
+        <div class="form-group" style="margin-top:1rem;">
+          <label>Name</label>
+          <input type="text" class="input" id="ed-name" placeholder="Recipe name" />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea class="input" id="ed-desc" placeholder="Short description"></textarea>
+        </div>
+
+        <div class="section-header" style="margin-bottom:0.5rem;">
+          <strong>Steps</strong>
+          <button class="btn btn-sm btn-secondary" id="btn-add-step">+ Add Step</button>
+        </div>
+        <ul class="step-rows" id="step-rows"></ul>
+
+        <div class="add-step-panel" id="add-step-panel">
+          <div class="step-type-picker">
+            <button class="btn btn-sm btn-secondary" data-stype="weight">&#9878; Weight</button>
+            <button class="btn btn-sm btn-secondary" data-stype="timer">&#9201; Timer</button>
+            <button class="btn btn-sm btn-secondary" data-stype="instruction">&#128203; Instruction</button>
+          </div>
+          <div class="step-fields" id="step-fields"></div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+            <button class="btn btn-sm btn-primary" id="btn-confirm-step">Add</button>
+            <button class="btn btn-sm btn-secondary" id="btn-cancel-step">Cancel</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;margin-top:1.25rem;">
+          <button class="btn btn-primary" id="btn-save-recipe">Save Recipe</button>
+          <button class="btn btn-secondary" id="btn-cancel-recipe">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User modal -->
+  <div id="user-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="user-modal-title">Add User</h3>
+        <button class="modal-close" id="user-modal-close">&#215;</button>
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" class="input" id="u-name" placeholder="Full name" />
+      </div>
+      <div class="form-group">
+        <label>RFID UID</label>
+        <input type="text" class="input" id="u-rfid" placeholder="e.g. A1B2C3D4" />
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select class="select" id="u-role">
+          <option value="client">Client</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-user-cancel">Cancel</button>
+        <button class="btn btn-primary" id="btn-user-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/utils.js?v=2"></script>
+  <script src="js/admin.js?v=3"></script>
+</body>
+</html>
