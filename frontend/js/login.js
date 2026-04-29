@@ -18,7 +18,18 @@
         clearInterval(poll);
         sessionStorage.setItem('token', data.token);
         sessionStorage.setItem('user',  JSON.stringify(data.user));
-        window.location.href = '/select.html';
+        try {
+          const sessionRes = await apiFetch('/api/sessions/current');
+          if (sessionRes?.ok && sessionRes.data?.current_step > 0) {
+            sessionStorage.setItem('session_id',
+              sessionRes.data._id || sessionRes.data.session_id);
+            window.location.href = '/brew.html';
+          } else {
+            window.location.href = '/select.html';
+          }
+        } catch {
+          window.location.href = '/select.html';
+        }
       }
     } catch {
       setDot(false);
