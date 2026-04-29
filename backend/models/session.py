@@ -15,7 +15,7 @@ class BrewSessionModel(BaseModel):
     esp_id: str
     started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: datetime | None = None
-    status: Literal["active", "completed", "abandoned"] = "active"
+    status: Literal["active", "completed", "abandoned", "discarded"] = "active"
     current_step: int = 0
     last_seen: datetime = Field(default_factory=datetime.utcnow)
 
