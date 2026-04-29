@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History — Coffee Bar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">☕ Coffee Bar</span>
+    <div class="nav-links">
+      <a href="select.html">Menu</a>
+      <a href="history.html" style="color:var(--accent);">History</a>
+      <a href="admin.html" id="nav-admin" style="display:none;">Admin</a>
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn btn-sm btn-secondary" id="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="section-header">
+      <h2>Brew History</h2>
+    </div>
+
+    <div class="history-filters">
+      <div id="user-filter-wrap" style="display:none;">
+        <select class="select" id="user-filter" style="min-width:180px;">
+          <option value="">All users</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Recipe</th>
+            <th>Duration</th>
+            <th>Brewed By</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="4" style="color:var(--text-muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button class="btn btn-sm btn-secondary" id="btn-prev" disabled>← Previous</button>
+      <span id="page-label">Page 1</span>
+      <button class="btn btn-sm btn-secondary" id="btn-next">Next →</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/utils.js?v=2"></script>
+  <script src="js/history.js?v=2"></script>
+</body>
+</html>

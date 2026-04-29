@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coffee Bar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-status-row">
+    <span id="esp-dot" class="esp-dot"></span>
+    <span id="esp-label">ESP32</span>
+  </div>
+
+  <div class="login-page">
+    <div class="coffee-cup">
+      <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Cup body -->
+        <path d="M20 45 L30 95 Q30 100 35 100 L85 100 Q90 100 90 95 L100 45 Z"
+              fill="#c8853a" opacity="0.9"/>
+        <!-- Cup rim -->
+        <rect x="18" y="40" width="84" height="8" rx="4" fill="#e09a4a"/>
+        <!-- Handle -->
+        <path d="M90 55 Q115 55 115 72 Q115 89 90 89"
+              stroke="#e09a4a" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <!-- Steam lines -->
+        <path d="M45 30 Q48 22 45 14" stroke="#8a7560" stroke-width="3" fill="none"
+              stroke-linecap="round" opacity="0.7"/>
+        <path d="M60 28 Q63 18 60 8" stroke="#8a7560" stroke-width="3" fill="none"
+              stroke-linecap="round" opacity="0.7"/>
+        <path d="M75 30 Q78 22 75 14" stroke="#8a7560" stroke-width="3" fill="none"
+              stroke-linecap="round" opacity="0.7"/>
+      </svg>
+    </div>
+
+    <h1 style="color: var(--accent);">Coffee Bar</h1>
+    <p class="login-title">Scan your RFID card to begin</p>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/api.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

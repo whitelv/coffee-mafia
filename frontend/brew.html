@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brewing — Coffee Bar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Resume modal -->
+  <div id="resume-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header"><h3>Unfinished Session</h3></div>
+      <p id="resume-modal-text" style="color:var(--text-muted); margin-bottom:1.25rem;"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-start-fresh">Start Fresh</button>
+        <button class="btn btn-primary"   id="btn-resume">Resume</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESP32 disconnect overlay -->
+  <div id="esp-overlay" class="overlay">
+    <div class="overlay-icon">⚠️</div>
+    <div class="overlay-text">Scale disconnected — waiting for hardware…</div>
+  </div>
+
+  <!-- Completion screen -->
+  <div id="complete-screen">
+    <div class="complete-icon">☕</div>
+    <h1 style="color:var(--accent);">Coffee Ready!</h1>
+    <p style="color:var(--text-muted);">Your brew is complete.</p>
+    <a href="select.html" class="btn btn-primary" style="margin-top:0.5rem;">Back to Menu</a>
+  </div>
+
+  <!-- Main layout -->
+  <div id="brew-app" style="display:none;">
+    <nav class="nav">
+      <span class="nav-brand">☕ Coffee Bar</span>
+      <div class="nav-links">
+        <span class="nav-user" id="nav-username"></span>
+        <button class="btn btn-sm btn-secondary" id="btn-drop-session">Drop Session</button>
+      </div>
+    </nav>
+
+    <div class="brew-layout">
+      <!-- Top bar -->
+      <div class="brew-top-bar">
+        <div class="brew-top-meta">
+          <span class="brew-recipe-name" id="top-recipe-name">—</span>
+          <span id="top-step-counter">Step 1 of 1</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="top-progress" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Main step card -->
+      <div class="brew-main">
+        <div class="step-card card" id="step-card">
+          <p style="color:var(--text-muted);">Connecting…</p>
+        </div>
+      </div>
+
+      <!-- Step sidebar -->
+      <div class="step-sidebar">
+        <div class="sidebar-title">Steps</div>
+        <div id="step-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/ws.js?v=3"></script>
+  <script src="js/utils.js?v=2"></script>
+  <script src="js/brew.js?v=8"></script>
+</body>
+</html>

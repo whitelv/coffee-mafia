@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Recipe — Coffee Bar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">☕ Coffee Bar</span>
+    <div class="nav-links">
+      <span id="nav-admin-links" style="display:none; display:contents;">
+        <a href="history.html" id="nav-history" style="display:none;">History</a>
+        <a href="admin.html"   id="nav-admin"   style="display:none;">Admin</a>
+      </span>
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn btn-sm btn-secondary" id="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div id="resume-banner" class="banner" style="display:none;">
+      <span>☕</span>
+      <p id="resume-text">You have an unfinished brew session.</p>
+      <a href="brew.html" class="btn btn-sm btn-primary">Resume</a>
+      <button class="btn btn-sm btn-secondary" id="btn-discard">Start Fresh</button>
+    </div>
+
+    <div class="section-header">
+      <h2>Choose a Recipe</h2>
+    </div>
+
+    <div id="recipe-grid" class="recipe-grid">
+      <div class="card" style="color:var(--text-muted);">Loading recipes…</div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/utils.js?v=2"></script>
+  <script src="js/select.js?v=8"></script>
+</body>
+</html>
