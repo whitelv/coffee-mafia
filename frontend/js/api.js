@@ -1,6 +1,4 @@
-const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8000'
-  : 'https://your-app.onrender.com';
+const BASE_URL = 'https://coffee-mafia.onrender.com';
 
 const APP_VERSION = '2026-04-29-oled-sync';
 if (sessionStorage.getItem('app_version') !== APP_VERSION) {
