@@ -33,6 +33,19 @@ async def _active_session_for_user(user_id: str) -> dict | None:
     return await db.brew_sessions.find_one({"user_id": user_id, "status": "active"})
 
 
+async def _resumable_session_for_user(user_id: str) -> dict | None:
+    db = get_db()
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
+    return await db.brew_sessions.find_one(
+        {
+            "user_id": user_id,
+            "status": "abandoned",
+            "completed_at": {"$gte": cutoff},
+        },
+        sort=[("completed_at", -1)],
+    )
+
+
 async def _abandon_active_sessions_for_user(user_id: str, reason: str) -> int:
     from backend.routers.ws import _abandon_session
 
@@ -165,20 +178,29 @@ async def get_current_session(user: UserPublic = Depends(get_current_user)):
     db = get_db()
     session_doc = await _active_session_for_user(user.id)
     if not session_doc:
-        return ok({
-            "session": None,
-            "recipe": None,
-            "resume_available": False,
-        })
+        session_doc = await _resumable_session_for_user(user.id)
+        if session_doc:
+            now = datetime.utcnow()
+            await db.brew_sessions.update_one(
+                {"_id": session_doc["_id"]},
+                {
+                    "$set": {"status": "active", "last_seen": now},
+                    "$unset": {"completed_at": ""},
+                },
+            )
+            session_doc["status"] = "active"
+            session_doc["last_seen"] = now
+            session_doc.pop("completed_at", None)
+            _sync_entry_from_session(str(session_doc["_id"]), session_doc, user)
+        else:
+            return ok({
+                "session": None,
+                "recipe": None,
+                "resume_available": False,
+            })
 
     recipe_doc = await db.recipes.find_one({"_id": to_object_id(session_doc["recipe_id"])})
-    cutoff = datetime.utcnow() - timedelta(minutes=10)
-    abandoned = await db.brew_sessions.find_one({
-        "user_id": user.id,
-        "status": "abandoned",
-        "completed_at": {"$gte": cutoff},
-        "current_step": {"$gt": 0},
-    })
+    abandoned = await _resumable_session_for_user(user.id)
     return ok({
         "session": serialize_doc(session_doc),
         "recipe": serialize_recipe(recipe_doc),
