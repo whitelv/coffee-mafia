@@ -2,20 +2,15 @@ services:
   - type: web
     name: coffee-bar-backend
     runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    region: frankfurt
+    plan: free
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /health
     envVars:
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: JWT_EXPIRE_HOURS
-        value: "8"
       - key: ALLOWED_ORIGINS
         sync: false
-      - key: ESP_WEIGHT_STABLE_STDDEV
-        value: "1.0"
-      - key: ESP_WEIGHT_TOLERANCE_PERCENT
-        value: "5"

@@ -1,7 +1,11 @@
 import asyncio
 import logging
+import os
+import sys
 import traceback
 from contextlib import asynccontextmanager
+
+sys.path.append(os.path.dirname(__file__))
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -10,7 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from config import settings
 from database import close_db, connect_db, get_db
 from routers import auth, history, recipes, sessions, users, ws
 import state as st
@@ -30,11 +33,12 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("Database startup validation failed")
         await close_db()
-        raise
+        sys.exit(1)
 
     logger.info("MongoDB connected")
     logger.info("Startup data loaded: users=%s recipes=%s", user_count, recipe_count)
     logger.info("WebSocket hub initialized")
+    logger.info("Server started successfully")
 
     watchdog_task = asyncio.create_task(ws.stale_session_watchdog())
     yield
@@ -98,7 +102,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         content={"ok": False, "error": "internal server error"},
     )
 
-origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
+origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -117,16 +121,20 @@ app.include_router(ws.router, tags=["websocket"])
 
 @app.get("/health", tags=["health"])
 async def health():
-    db_status = "connected"
     try:
         await get_db().command("ping")
     except Exception:
         logger.exception("Health check database ping failed")
-        db_status = "disconnected"
+        return {
+            "ok": False,
+            "db": "disconnected",
+            "sessions_active": 0,
+            "esp_connected": 0,
+        }
 
     return {
-        "ok": db_status == "connected",
-        "db": db_status,
+        "ok": True,
+        "db": "connected",
         "sessions_active": len(st.sessions),
         "esp_connected": len(st.esp_sockets),
     }
