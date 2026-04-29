@@ -11,14 +11,17 @@
  */
 
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
+#include <memory>
 #include <SPI.h>
 #include <Wire.h>
 #include <MFRC522.h>
 #include <HX711.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <tiny_websockets/network/generic_esp/generic_esp_clients.hpp>
 
 #include "config.h"
 
@@ -39,7 +42,23 @@ enum State { CONNECTING_WIFI, CONNECTING_WS, IDLE, AUTHENTICATED, WEIGHING };
 State currentState = CONNECTING_WIFI;
 
 // ---- Hardware objects ----
+#if WS_USE_SSL
+class InsecureEsp32TcpClient : public network::GenericEspTcpClient<WiFiClientSecure> {
+public:
+  InsecureEsp32TcpClient() {
+    client.setInsecure();
+  }
+
+  bool connect(const WSString& host, int port) override {
+    client.setInsecure();
+    return network::GenericEspTcpClient<WiFiClientSecure>::connect(host, port);
+  }
+};
+
+WebsocketsClient ws(std::make_shared<InsecureEsp32TcpClient>());
+#else
 WebsocketsClient ws;
+#endif
 HX711            scale;
 MFRC522          rfid(MFRC522_SS, MFRC522_RST);
 Adafruit_SSD1306 display(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);
@@ -275,7 +294,6 @@ void setup() {
       currentState = CONNECTING_WS;
     }
   });
-
   showOLED("Connecting WiFi", "", "");
   Serial.println("[WiFi] Connecting to SSID: " + String(WIFI_SSID));
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -321,7 +339,11 @@ void loop() {
       if (now - lastWsRetryMs >= 5000) {
         lastWsRetryMs = now;
         Serial.println("[WS] Connecting to " + String(SERVER_URL));
+#if WS_USE_SSL
+        if (ws.connect(WS_HOST, WS_PORT, WS_PATH)) {
+#else
         if (ws.connect(SERVER_URL)) {
+#endif
           Serial.println("[WS] Connected");
           StaticJsonDocument<64> helloDoc;
           JsonObject helloArgs = helloDoc.to<JsonObject>();
