@@ -89,6 +89,54 @@ def _check_weight_stable(entry: st.SessionEntry) -> bool:
     )
 
 
+def _step_display_lines(step: dict | None) -> tuple[str, str, str]:
+    if not step:
+        return ("Brew session", "No step", "")
+
+    step_type = step.get("type", "")
+    label = str(step.get("label") or step_type or "Step")
+
+    if step_type == "weight":
+        target = step.get("target_value")
+        line3 = f"Target: {target}g" if target is not None else ""
+        return ("Weight step", label, line3)
+    if step_type == "timer":
+        seconds = step.get("target_value")
+        line3 = f"Timer: {seconds}s" if seconds is not None else ""
+        return ("Timer step", label, line3)
+    if step_type == "instruction":
+        text = str(step.get("instruction_text") or "")
+        return ("Instruction", label, text)
+    return ("Brew step", label, "")
+
+
+async def _send_display_status(
+    esp_id: str | None,
+    line1: str,
+    line2: str = "",
+    line3: str = "",
+) -> None:
+    if not esp_id:
+        return
+    esp_ws = st.esp_sockets.get(esp_id)
+    await _send(esp_ws, {
+        "event": "display_status",
+        "line1": line1[:21],
+        "line2": line2[:21],
+        "line3": line3[:21],
+    })
+
+
+async def _sync_esp_display_to_step(entry: st.SessionEntry, recipe_data: dict | None) -> None:
+    if not recipe_data:
+        return
+    steps = recipe_data.get("steps", [])
+    if entry.current_step >= len(steps):
+        return
+    line1, line2, line3 = _step_display_lines(steps[entry.current_step])
+    await _send_display_status(entry.esp_id, line1, line2, line3)
+
+
 async def _complete_session(session_id: str, entry: st.SessionEntry) -> None:
     db = get_db()
     now = datetime.utcnow()
@@ -325,6 +373,7 @@ async def _browser_websocket_handler(
         "current_step": entry.current_step,
         "recipe": recipe_data,
     })
+    await _sync_esp_display_to_step(entry, recipe_data)
 
     try:
         while True:
@@ -401,6 +450,7 @@ async def _handle_start_weight(
     entry.weight_window.clear()
     esp_ws = st.esp_sockets.get(entry.esp_id)
     await _send(esp_ws, {"event": "request_weight", "target": target})
+    await _sync_esp_display_to_step(entry, recipe_data)
 
 
 async def _handle_next_step(
@@ -435,6 +485,7 @@ async def _handle_next_step(
             "step_index": entry.current_step,
             "step": next_step,
         })
+        await _sync_esp_display_to_step(entry, recipe_data)
 
 
 async def _handle_tare_scale(entry: st.SessionEntry) -> None:

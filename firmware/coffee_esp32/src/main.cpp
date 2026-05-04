@@ -36,6 +36,11 @@ constexpr uint8_t OLED_SCL    = 22;
 constexpr uint16_t OLED_WEIGHT_REFRESH_MS = 250;
 constexpr uint16_t OLED_AUTH_TIMEOUT_MS = 8000;
 constexpr uint8_t OLED_CONTRAST = 150;
+constexpr uint16_t WEIGHT_READ_INTERVAL_MS = 250;
+constexpr uint16_t HX711_READ_TIMEOUT_MS = 120;
+constexpr uint16_t HX711_TARE_TIMEOUT_MS = 300;
+constexpr uint8_t HX711_TARE_SAMPLES = 10;
+constexpr uint16_t I2C_TIMEOUT_MS = 50;
 
 // ---- State machine ----
 enum State { CONNECTING_WIFI, CONNECTING_WS, IDLE, AUTHENTICATED, WEIGHING };
@@ -82,14 +87,19 @@ unsigned long lastAuthRequestMs = 0;
 // ---- OLED state ----
 bool oledReady = false;
 bool waitingForAuth = false;
+bool pendingTare = false;
 String oledLine1 = "";
 String oledLine2 = "";
 String oledLine3 = "";
+long scaleOffset = 0;
+unsigned long lastScaleNotReadyMs = 0;
 
 // ---- Forward declarations ----
 void sendEvent(String event, JsonObject extra);
 String stateString();
 void showOLED(String line1, String line2 = "", String line3 = "");
+bool tareScale(uint8_t samples = HX711_TARE_SAMPLES);
+bool readScaleGrams(float& grams);
 
 // ---- Helpers ----
 
@@ -113,6 +123,42 @@ String formatWeightLine(float grams) {
 String formatTargetLine(JsonVariant target) {
   if (target.isNull()) return "";
   return "Target: " + String(target.as<float>(), 1) + "g";
+}
+
+bool waitForScaleReady(uint16_t timeoutMs) {
+  unsigned long started = millis();
+  while (millis() - started < timeoutMs) {
+    if (scale.is_ready()) return true;
+    delay(1);
+    yield();
+  }
+  return false;
+}
+
+bool readScaleRaw(long& raw, uint16_t timeoutMs) {
+  if (!waitForScaleReady(timeoutMs)) return false;
+  raw = scale.read();
+  return true;
+}
+
+bool tareScale(uint8_t samples) {
+  long sum = 0;
+  for (uint8_t i = 0; i < samples; i++) {
+    long raw = 0;
+    if (!readScaleRaw(raw, HX711_TARE_TIMEOUT_MS)) return false;
+    sum += raw;
+    yield();
+  }
+  scaleOffset = sum / samples;
+  scale.set_offset(scaleOffset);
+  return true;
+}
+
+bool readScaleGrams(float& grams) {
+  long raw = 0;
+  if (!readScaleRaw(raw, HX711_READ_TIMEOUT_MS)) return false;
+  grams = (raw - scaleOffset) / CALIBRATION_F;
+  return true;
 }
 
 void showOLED(String line1, String line2, String line3) {
@@ -230,11 +276,9 @@ void onMessage(WebsocketsMessage msg) {
     Serial.println("[WS] Stop weighing");
   }
   else if (strcmp(event, "tare_scale") == 0) {
+    pendingTare = true;
     showOLED("Taring scale", "", "");
-    scale.tare(10);
-    sendEvent("tare_done", noArgs);
-    showOLED("Tare done", "", "");
-    Serial.println("[WS] Scale tared");
+    Serial.println("[WS] Tare requested");
   }
   else if (strcmp(event, "session_complete") == 0) {
     authToken    = "";
@@ -265,6 +309,7 @@ void setup() {
   delay(200);
 
   Wire.begin(OLED_SDA, OLED_SCL);
+  Wire.setTimeOut(I2C_TIMEOUT_MS);
   if (display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     oledReady = true;
     display.clearDisplay();
@@ -282,9 +327,13 @@ void setup() {
   Serial.println("[RFID] MFRC522 initialized");
 
   scale.begin(HX711_DOUT, HX711_SCK);
-  scale.tare(10);
   scale.set_scale(CALIBRATION_F);
-  Serial.println("[Scale] HX711 initialized and tared");
+  if (tareScale()) {
+    Serial.println("[Scale] HX711 initialized and tared");
+  } else {
+    Serial.println("[Scale] HX711 not ready; continuing without tare");
+    showOLED("Scale error", "HX711 not ready", "");
+  }
 
   ws.onMessage(onMessage);
   ws.onEvent([](WebsocketsEvent event, String data) {
@@ -376,6 +425,20 @@ void loop() {
         break;
       }
 
+      if (pendingTare) {
+        pendingTare = false;
+        StaticJsonDocument<64> empty;
+        JsonObject noArgs = empty.to<JsonObject>();
+        if (tareScale()) {
+          sendEvent("tare_done", noArgs);
+          showOLED("Tare done", "", "");
+          Serial.println("[WS] Scale tared");
+        } else {
+          showOLED("Scale error", "HX711 not ready", "");
+          Serial.println("[Scale] Tare failed: HX711 not ready");
+        }
+      }
+
       // RFID polling (IDLE and AUTHENTICATED only)
       if (currentState != WEIGHING) {
         if (waitingForAuth && now - lastAuthRequestMs >= OLED_AUTH_TIMEOUT_MS) {
@@ -408,9 +471,17 @@ void loop() {
 
       // Weight streaming (WEIGHING only)
       if (currentState == WEIGHING) {
-        if (now - lastWeightMs >= 50) {
+        if (now - lastWeightMs >= WEIGHT_READ_INTERVAL_MS) {
           lastWeightMs = now;
-          float grams = scale.get_units(3);
+          float grams = 0.0f;
+          if (!readScaleGrams(grams)) {
+            if (now - lastScaleNotReadyMs >= 1000) {
+              lastScaleNotReadyMs = now;
+              Serial.println("[Scale] HX711 not ready");
+              showOLED("Scale error", "HX711 not ready", "");
+            }
+            break;
+          }
           Serial.println("[Scale] " + String(grams, 1) + "g");
           StaticJsonDocument<64> wDoc;
           JsonObject wArgs = wDoc.to<JsonObject>();
