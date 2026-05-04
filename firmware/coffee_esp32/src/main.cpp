@@ -95,11 +95,12 @@ long scaleOffset = 0;
 unsigned long lastScaleNotReadyMs = 0;
 
 // ---- Forward declarations ----
-void sendEvent(String event, JsonObject extra);
+bool sendEvent(String event, JsonObject extra);
 String stateString();
 void showOLED(String line1, String line2 = "", String line3 = "");
 bool tareScale(uint8_t samples = HX711_TARE_SAMPLES);
 bool readScaleGrams(float& grams);
+void markWsDisconnected(String reason);
 
 // ---- Helpers ----
 
@@ -208,7 +209,13 @@ String readRfidUid() {
   return uid;
 }
 
-void sendEvent(String event, JsonObject extra) {
+void markWsDisconnected(String reason) {
+  Serial.println("[WS] Disconnected: " + reason);
+  showOLED("WebSocket", "Disconnected", "");
+  currentState = CONNECTING_WS;
+}
+
+bool sendEvent(String event, JsonObject extra) {
   StaticJsonDocument<256> doc;
   doc["event"] = event;
   for (JsonPair kv : extra) {
@@ -216,8 +223,14 @@ void sendEvent(String event, JsonObject extra) {
   }
   String output;
   serializeJson(doc, output);
-  ws.send(output);
+  bool sent = ws.send(output);
+  if (!sent) {
+    Serial.println("[WS] Send failed: " + output);
+    markWsDisconnected("send failed");
+    return false;
+  }
   Serial.println("[WS] Sent: " + output);
+  return true;
 }
 
 String stateString() {
@@ -254,6 +267,11 @@ void onMessage(WebsocketsMessage msg) {
     const char* workerName = doc["user"]["name"] | "";
     showOLED("Worker", "Logged in", String(workerName));
     Serial.println("[WS] Authenticated");
+  }
+  else if (strcmp(event, "hello_ack") == 0) {
+    currentState = IDLE;
+    showOLED("WebSocket", "Connected", "Scan RFID");
+    Serial.println("[WS] Hello acknowledged");
   }
   else if (strcmp(event, "auth_fail") == 0) {
     authToken    = "";
@@ -397,9 +415,10 @@ void loop() {
           StaticJsonDocument<64> helloDoc;
           JsonObject helloArgs = helloDoc.to<JsonObject>();
           helloArgs["esp_id"] = ESP_ID;
-          sendEvent("hello", helloArgs);
-          currentState = IDLE;
-          showOLED("WebSocket", "Connected", "Scan RFID");
+          if (sendEvent("hello", helloArgs)) {
+            currentState = IDLE;
+            showOLED("WebSocket", "Waiting server", "");
+          }
         } else {
           Serial.println("[WS] Connection failed, retrying in 5s");
           showOLED("WebSocket", "Disconnected", "");
@@ -420,8 +439,7 @@ void loop() {
         break;
       }
       if (!ws.available()) {
-        showOLED("WebSocket", "Disconnected", "");
-        currentState = CONNECTING_WS;
+        markWsDisconnected("socket unavailable");
         break;
       }
 

@@ -191,7 +191,9 @@ async def esp_websocket(websocket: WebSocket, esp_id: str) -> None:
                 continue
             event = msg.get("event")
 
-            if event == "rfid_scan":
+            if event == "hello":
+                await _send(websocket, {"event": "hello_ack", "esp_id": esp_id})
+            elif event == "rfid_scan":
                 await _handle_rfid_scan(esp_id, msg)
             elif event == "weight_reading":
                 await _handle_weight_reading(esp_id, msg)
