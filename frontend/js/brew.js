@@ -287,7 +287,14 @@
         renderStep(steps[currentIndex]);
       },
       onWeightUpdate(value) {
-        if (weightState === 'STREAMING') updateWeightDisplay(value);
+        if (steps[currentIndex] && steps[currentIndex].type === 'weight') {
+          if (weightState === 'IDLE') {
+            weightState = 'STREAMING';
+            const startBtn = document.getElementById('btn-start-weight');
+            if (startBtn) startBtn.style.display = 'none';
+          }
+          updateWeightDisplay(value);
+        }
       },
       onWeightStable(value) {
         transitionWeightStable(value);

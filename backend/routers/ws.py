@@ -137,6 +137,40 @@ async def _sync_esp_display_to_step(entry: st.SessionEntry, recipe_data: dict | 
     await _send_display_status(entry.esp_id, line1, line2, line3)
 
 
+async def _restore_weight_streaming_from_session(entry: st.SessionEntry) -> bool:
+    if entry.weight_streaming:
+        return True
+
+    db = get_db()
+    recipe_doc = await db.recipes.find_one({"_id": ObjectId(entry.recipe_id)})
+    if not recipe_doc:
+        return False
+
+    steps = recipe_doc.get("steps", [])
+    if entry.current_step >= len(steps):
+        return False
+
+    step = steps[entry.current_step]
+    if step.get("type") != "weight":
+        return False
+
+    target = step.get("target_value")
+    if target is None:
+        return False
+
+    entry.weight_target = target
+    entry.weight_tolerance = step.get("tolerance")
+    entry.weight_streaming = True
+    entry.weight_window.clear()
+    logger.info(
+        "Restored weight streaming from session state: esp_id=%s step=%s target=%s",
+        entry.esp_id,
+        entry.current_step,
+        target,
+    )
+    return True
+
+
 async def _complete_session(session_id: str, entry: st.SessionEntry) -> None:
     db = get_db()
     now = datetime.utcnow()
@@ -266,7 +300,9 @@ async def _handle_weight_reading(esp_id: str, msg: dict) -> None:
     if not session_id:
         return
     entry = st.sessions.get(session_id)
-    if not entry or not entry.weight_streaming:
+    if not entry:
+        return
+    if not entry.weight_streaming and not await _restore_weight_streaming_from_session(entry):
         return
 
     try:
