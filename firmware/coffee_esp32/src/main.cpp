@@ -25,6 +25,10 @@
 
 #include "config.h"
 
+#ifndef BUTTON_PIN
+#define BUTTON_PIN   0
+#endif
+
 using namespace websockets;
 
 // ---- OLED display ----
@@ -41,6 +45,8 @@ constexpr uint16_t HX711_READ_TIMEOUT_MS = 120;
 constexpr uint16_t HX711_TARE_TIMEOUT_MS = 300;
 constexpr uint8_t HX711_TARE_SAMPLES = 10;
 constexpr uint16_t I2C_TIMEOUT_MS = 50;
+constexpr uint16_t BUTTON_DEBOUNCE_MS = 40;
+constexpr uint16_t BUTTON_LONG_PRESS_MS = 1200;
 
 // ---- State machine ----
 enum State { CONNECTING_WIFI, CONNECTING_WS, IDLE, AUTHENTICATED, WEIGHING };
@@ -84,11 +90,16 @@ unsigned long lastRfidPollMs   = 0;
 unsigned long lastOledWeightMs = 0;
 unsigned long lastWifiBeginMs  = 0;
 unsigned long lastAuthRequestMs = 0;
+unsigned long lastButtonChangeMs = 0;
+unsigned long buttonPressStartMs = 0;
 
 // ---- OLED state ----
 bool oledReady = false;
 bool waitingForAuth = false;
 bool pendingTare = false;
+bool buttonLastRawPressed = false;
+bool buttonPressed = false;
+bool buttonLongHandled = false;
 String oledLine1 = "";
 String oledLine2 = "";
 String oledLine3 = "";
@@ -102,6 +113,7 @@ void showOLED(String line1, String line2 = "", String line3 = "");
 bool tareScale(uint8_t samples = HX711_TARE_SAMPLES);
 bool readScaleGrams(float& grams);
 void markWsDisconnected(String reason);
+void pollButton(unsigned long now);
 
 // ---- Helpers ----
 
@@ -161,6 +173,59 @@ bool readScaleGrams(float& grams) {
   if (!readScaleRaw(raw, HX711_READ_TIMEOUT_MS)) return false;
   grams = (raw - scaleOffset) / CALIBRATION_F;
   return true;
+}
+
+void showDeviceStatus() {
+  String wifiLine = WiFi.status() == WL_CONNECTED
+    ? WiFi.localIP().toString()
+    : "WiFi: " + wifiStatusString(WiFi.status());
+  String wsLine = ws.available() ? "WS online" : "WS offline";
+  showOLED("State: " + stateString(), wifiLine, wsLine);
+}
+
+void handleButtonShortPress() {
+  Serial.println("[Button] Short press");
+  showDeviceStatus();
+}
+
+void handleButtonLongPress() {
+  Serial.println("[Button] Long press");
+  if (currentState == WEIGHING) {
+    pendingTare = true;
+    showOLED("Button", "Tare requested", "");
+    return;
+  }
+  showDeviceStatus();
+}
+
+void pollButton(unsigned long now) {
+  bool rawPressed = digitalRead(BUTTON_PIN) == LOW;
+
+  if (rawPressed != buttonLastRawPressed) {
+    buttonLastRawPressed = rawPressed;
+    lastButtonChangeMs = now;
+  }
+
+  if (now - lastButtonChangeMs < BUTTON_DEBOUNCE_MS) return;
+  if (rawPressed == buttonPressed) {
+    if (buttonPressed && !buttonLongHandled && now - buttonPressStartMs >= BUTTON_LONG_PRESS_MS) {
+      buttonLongHandled = true;
+      handleButtonLongPress();
+    }
+    return;
+  }
+
+  buttonPressed = rawPressed;
+  if (buttonPressed) {
+    buttonPressStartMs = now;
+    buttonLongHandled = false;
+    return;
+  }
+
+  unsigned long pressMs = now - buttonPressStartMs;
+  if (!buttonLongHandled && pressMs < BUTTON_LONG_PRESS_MS) {
+    handleButtonShortPress();
+  }
 }
 
 void showOLED(String line1, String line2, String line3) {
@@ -328,7 +393,8 @@ void onMessage(WebsocketsMessage msg) {
       currentWeightTarget = "";
       currentStepLabel = "";
     } else if (strcmp(state, "authenticated") == 0) {
-      if (currentState != WEIGHING) currentState = AUTHENTICATED;
+      currentState = AUTHENTICATED;
+      currentWeightTarget = "";
       currentStepLabel = String(line2);
     } else if (strcmp(state, "weighing") == 0) {
       currentState = WEIGHING;
@@ -344,6 +410,7 @@ void onMessage(WebsocketsMessage msg) {
 void setup() {
   Serial.begin(115200);
   delay(200);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Wire.begin(OLED_SDA, OLED_SCL);
   Wire.setTimeOut(I2C_TIMEOUT_MS);
@@ -390,6 +457,7 @@ void setup() {
 // ---- Loop ----
 void loop() {
   unsigned long now = millis();
+  pollButton(now);
 
   switch (currentState) {
 

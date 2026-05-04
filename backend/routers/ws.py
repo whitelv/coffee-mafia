@@ -28,8 +28,10 @@ async def _send(ws: WebSocket | None, payload: dict) -> None:
         return
     try:
         encoded = jsonable_encoder(payload, custom_encoder={ObjectId: str})
-        await ws.send_text(json.dumps(encoded))
+        await asyncio.wait_for(ws.send_text(json.dumps(encoded)), timeout=2.0)
         logger.debug("WebSocket sent event=%s", payload.get("event"))
+    except asyncio.TimeoutError:
+        logger.warning("WebSocket send timed out for event=%s", payload.get("event"))
     except Exception:
         logger.exception("WebSocket send failed for event=%s", payload.get("event"))
 
@@ -51,9 +53,19 @@ async def _abandon_session(session_id: str, reason: str = "timeout") -> None:
     esp_id = entry.esp_id if entry else session_doc.get("esp_id")
     browser_ws = entry.browser_ws if entry else None
 
-    await _send(browser_ws, {"event": "session_abandoned"})
     esp_ws = st.esp_sockets.get(esp_id)
-    await _send(esp_ws, {"event": "session_abandoned"})
+    if reason == "dropped":
+        user_name = (entry.user.get("name") if entry else None) or "Choose recipe"
+        await _send(esp_ws, {
+            "event": "display_status",
+            "line1": "Worker logged in",
+            "line2": user_name[:21],
+            "line3": "Choose recipe",
+            "state": "authenticated",
+        })
+    else:
+        await _send(esp_ws, {"event": "session_abandoned", "reason": reason})
+    await _send(browser_ws, {"event": "session_abandoned", "reason": reason})
     if esp_id:
         st.esp_registry.pop(esp_id, None)
     st.sessions.pop(session_id, None)
