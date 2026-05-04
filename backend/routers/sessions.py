@@ -232,6 +232,14 @@ async def discard_current_session(user: UserPublic = Depends(get_current_user)):
     return ok({"status": "discarded", "discarded_count": count})
 
 
+@router.post("/current/drop")
+async def drop_current_session(user: UserPublic = Depends(get_current_user)):
+    count = await _abandon_active_sessions_for_user(user.id, "dropped")
+    if count == 0:
+        raise HTTPException(status_code=404, detail="No active session")
+    return ok({"status": "abandoned", "dropped_count": count})
+
+
 @router.post("/current/ping-close")
 async def ping_close(request: Request):
     return ok({"status": "closed"})

@@ -60,6 +60,7 @@ function deleteRecipe(id)        { return apiFetch(`/api/recipes/${id}`, { metho
 function createSession(data)     { return apiFetch('/api/sessions', { method: 'POST', body: JSON.stringify(data) }); }
 function selectRecipe(recipe_id) { return createSession({ recipe_id, esp_id: 'ESP32_BAR_01' }); }
 function getCurrentSession()     { return apiFetch('/api/sessions/current'); }
+function dropSession()           { return apiFetch('/api/sessions/current/drop', { method: 'POST' }); }
 function discardSession()        { return apiFetch('/api/sessions/current/discard', { method: 'POST' }); }
 function completeSession(id)     { return apiFetch(`/api/sessions/${id}/complete`, { method: 'POST' }); }
 function syncEspDisplay(esp_id = 'ESP32_BAR_01', lines = {}) {

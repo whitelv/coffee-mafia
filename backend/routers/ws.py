@@ -42,7 +42,7 @@ async def _abandon_session(session_id: str, reason: str = "timeout") -> None:
         return
 
     now = datetime.utcnow()
-    status = "discarded" if reason == "discarded" else "abandoned"
+    status = "discarded" if reason in {"discarded", "replaced"} else "abandoned"
     await db.brew_sessions.update_one(
         {"_id": ObjectId(session_id)},
         {"$set": {"status": status, "completed_at": now, "abandon_reason": reason}},

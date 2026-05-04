@@ -265,7 +265,7 @@
     dropButton.disabled = true;
     dropRequested = true;
     try {
-      await discardSession();
+      await dropSession();
       leaveAbandonedSession();
     } catch (err) {
       dropRequested = false;
