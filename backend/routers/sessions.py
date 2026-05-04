@@ -26,6 +26,7 @@ class DeviceDisplayBody(BaseModel):
     line1: str | None = None
     line2: str | None = None
     line3: str | None = None
+    state: str | None = None
 
 
 async def _active_session_for_user(user_id: str) -> dict | None:
@@ -72,15 +73,19 @@ async def _send_display_status(
     line1: str,
     line2: str = "",
     line3: str = "",
+    state: str | None = None,
 ) -> None:
     from backend.routers.ws import _send
 
-    await _send(st.esp_sockets.get(esp_id), {
+    payload = {
         "event": "display_status",
         "line1": line1[:21],
         "line2": line2[:21],
         "line3": line3[:21],
-    })
+    }
+    if state:
+        payload["state"] = state
+    await _send(st.esp_sockets.get(esp_id), payload)
 
 
 def _sync_entry_from_session(session_id: str, session_doc: dict, user: UserPublic) -> None:
@@ -169,6 +174,7 @@ async def display_status(
         body.line1 or "Worker logged in",
         body.line2 if body.line2 is not None else user.name,
         body.line3 if body.line3 is not None else "Choose recipe",
+        body.state or "authenticated",
     )
     return ok({"status": "sent", "esp_online": body.esp_id in st.esp_sockets})
 

@@ -72,6 +72,7 @@ Adafruit_SSD1306 display(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);
 String authToken   = "";
 String lastRfidUid = "";
 String currentWeightTarget = "";
+String currentStepLabel = "";
 
 // ---- Timers ----
 unsigned long lastRfidTime     = 0;
@@ -284,7 +285,7 @@ void onMessage(WebsocketsMessage msg) {
     currentState = WEIGHING;
     currentWeightTarget = formatTargetLine(doc["target"]);
     lastOledWeightMs = 0;
-    showOLED("Brew step", "Weight active", currentWeightTarget);
+    showOLED(currentStepLabel.length() ? currentStepLabel : "Weight active", "", currentWeightTarget);
     Serial.println("[WS] Start weighing");
   }
   else if (strcmp(event, "stop_weight") == 0) {
@@ -302,13 +303,15 @@ void onMessage(WebsocketsMessage msg) {
     authToken    = "";
     currentState = IDLE;
     currentWeightTarget = "";
-    showOLED("Session", "Completed", "Scan RFID");
+    currentStepLabel = "";
+    showOLED("Coffee ready", "Session completed", "");
     Serial.println("[WS] Session complete — back to IDLE");
   }
   else if (strcmp(event, "session_abandoned") == 0) {
     authToken    = "";
     currentState = IDLE;
     currentWeightTarget = "";
+    currentStepLabel = "";
     showOLED("Session", "Abandoned", "Scan RFID");
     Serial.println("[WS] Session abandoned — back to IDLE");
   }
@@ -316,6 +319,22 @@ void onMessage(WebsocketsMessage msg) {
     const char* line1 = doc["line1"] | "";
     const char* line2 = doc["line2"] | "";
     const char* line3 = doc["line3"] | "";
+    const char* state = doc["state"] | "";
+
+    waitingForAuth = false;
+    if (strcmp(state, "idle") == 0) {
+      authToken = "";
+      currentState = IDLE;
+      currentWeightTarget = "";
+      currentStepLabel = "";
+    } else if (strcmp(state, "authenticated") == 0) {
+      if (currentState != WEIGHING) currentState = AUTHENTICATED;
+      currentStepLabel = String(line2);
+    } else if (strcmp(state, "weighing") == 0) {
+      currentState = WEIGHING;
+      currentStepLabel = String(line2);
+    }
+
     showOLED(String(line1), String(line2), String(line3));
     Serial.println("[OLED] Display status updated");
   }
@@ -508,7 +527,11 @@ void loop() {
           sendEvent("weight_reading", wArgs);
           if (now - lastOledWeightMs >= OLED_WEIGHT_REFRESH_MS) {
             lastOledWeightMs = now;
-            showOLED("Weight active", formatWeightLine(grams), currentWeightTarget);
+            showOLED(
+              currentStepLabel.length() ? currentStepLabel : "Weight active",
+              formatWeightLine(grams),
+              currentWeightTarget
+            );
           }
         }
       }

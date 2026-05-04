@@ -75,6 +75,7 @@ async function logoutToLogin() {
       line1: 'Scan RFID',
       line2: 'to login',
       line3: '',
+      state: 'idle',
     });
   } catch { /* Logout should still work if ESP/backend is unavailable. */ }
   sessionStorage.clear();

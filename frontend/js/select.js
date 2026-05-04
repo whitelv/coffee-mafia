@@ -3,6 +3,9 @@
   if (!raw) { window.location.href = '/index.html'; return; }
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   syncEspDisplay().catch(() => {});
+  const espDisplayTimer = setInterval(() => {
+    syncEspDisplay().catch(() => {});
+  }, 10000);
 
   /* ── Nav ── */
   document.getElementById('nav-username').textContent = user.name || '';
