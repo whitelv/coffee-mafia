@@ -1,0 +1,21 @@
+{
+  "name": "coffee-bar-frontend",
+  "private": true,
+  "scripts": {
+    "test": "jest --no-coverage",
+    "test:ci": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFiles": [
+      "./tests/setup.js"
+    ]
+  }
+}

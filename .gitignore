@@ -7,3 +7,12 @@ diff.txt
 firmware/coffee_esp32/config.h
 firmware/coffee_esp32/include/config.h
 **/.pio/
+
+# Node
+node_modules/
+frontend/coverage/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
