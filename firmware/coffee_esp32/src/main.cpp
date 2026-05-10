@@ -587,6 +587,7 @@ void loop() {
             }
             break;
           }
+          grams = max(0.0f, grams);
           Serial.println("[Scale] " + String(grams, 1) + "g");
           StaticJsonDocument<64> wDoc;
           JsonObject wArgs = wDoc.to<JsonObject>();

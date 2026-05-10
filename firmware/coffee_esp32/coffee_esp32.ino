@@ -234,6 +234,7 @@ void loop() {
         if (now - lastWeightMs >= 50) {
           lastWeightMs = now;
           float grams = scale.get_units(3);
+          grams = max(0.0f, grams);
           Serial.println("[Scale] " + String(grams, 1) + "g");
           StaticJsonDocument<64> wDoc;
           JsonObject wArgs = wDoc.to<JsonObject>();
